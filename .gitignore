@@ -25,3 +25,8 @@ __pycache__/
 # ─── 사용자 지정 ───────────────────────────────────────────
 save/
 data/
+
+# gsplat build cache
+gsplat/build/
+gsplat/**/*.o
+gsplat/**/*.so
