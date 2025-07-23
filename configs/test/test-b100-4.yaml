@@ -1,0 +1,16 @@
+test_dataset:
+  dataset:
+    name: paired-image-folders
+    args:
+      root_path_1: /home/jijang/ssd_data/projects/ContinuousSR/data/1_Image_SR/test/B100/LR_bicubic/X4
+      root_path_2: /home/jijang/ssd_data/projects/ContinuousSR/data/1_Image_SR/test/B100/HR
+  wrapper:
+    name: sr-implicit-paired
+    args: {}
+  batch_size: 1
+eval_type: benchmark-4
+# eval_bsize: 30000
+
+data_norm:
+  inp: {sub: [0], div: [1]}
+  gt: {sub: [0], div: [1]}

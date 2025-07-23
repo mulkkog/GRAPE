@@ -1,0 +1,20 @@
+test_dataset:
+  dataset:
+    name: image-folder
+    args:
+      root_path: /home/jijang/ssd_data/projects/ContinuousSR/data/1_Image_SR/DIV2K/DIV2K_valid_HR
+      first_k:
+      repeat: 1
+      cache: in_memory
+  wrapper:
+    name: sr-implicit-downsampled
+    args:
+      inp_size:
+      scale_max: 10
+      scale_min: 10
+  batch_size: 1
+eval_type: div2k-10
+
+data_norm:
+  inp: {sub: [0], div: [1]}
+  gt: {sub: [0], div: [1]}

@@ -1,0 +1,27 @@
+# ─── 기본 Python ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+*.log
+ 
+# 편집기 / IDE
+.vscode/
+.idea/
+*.swp
+*~
+ 
+# Jupyter
+.ipynb_checkpoints/
+
+# CUDA / C++ 확장 빌드 캐시
+*.cu.o
+*.cuh.gch
+*.ptx
+ 
+# ─── 사용자 지정 ───────────────────────────────────────────
+save/
+data/

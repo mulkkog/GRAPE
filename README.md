@@ -99,6 +99,4 @@ python test.py --config configs/test/test-urban100-4.yaml --model save/edsr+gaus
 ## License
 
 GRAPE is released under the **MIT License**.  See `LICENSE` for details.
-
-# GRAPE
-# GRAPE
+ 

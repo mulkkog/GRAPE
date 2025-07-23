@@ -1,0 +1,55 @@
+train_dataset:
+  dataset:
+    name: paired-image-folders
+    args:
+      root_path_1: /home/jijang/ssd_data/projects/ContinuousSR/data/3_Real_Image_Denoising/SIDD/train/input_crops
+      root_path_2: /home/jijang/ssd_data/projects/ContinuousSR/data/3_Real_Image_Denoising/SIDD/train/gt_crops
+      cache: in_memory
+  wrapper:
+    name: dn-paired-folders-cropped
+    args:
+      inp_size: 256 
+  batch_size: 16
+
+val_dataset:
+  dataset:
+    name: paired-image-folders
+    args:
+      root_path_1: /home/jijang/ssd_data/projects/ContinuousSR/data/3_Real_Image_Denoising/SIDD/val/input_crops
+      root_path_2: /home/jijang/ssd_data/projects/ContinuousSR/data/3_Real_Image_Denoising/SIDD/val/gt_crops
+      cache: in_memory
+  wrapper:
+    name: dn-paired-folders-cropped
+    args:
+      inp_size: 256 
+  batch_size: 16
+
+data_norm:
+  inp: {sub: [0], div: [1]}
+  gt: {sub: [0], div: [1]}
+
+model:
+  name: my-gauss-emsemble-fast-dn
+  args:
+    encoder_spec:
+      name: edsr-baseline
+      args:
+        no_upsampling: true
+         
+ 
+optimizer:
+  name: adam
+  args:
+    lr: 1.e-4
+epoch_max: 10000
+ 
+lr_schedule:
+   name: CosineAnnealingLR 
+   args:
+     T_max: 10000 
+     eta_min: 1.e-6
+
+epoch_val: 1
+epoch_save: 100
+
+pre_train: ~

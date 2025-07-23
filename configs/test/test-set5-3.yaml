@@ -1,0 +1,15 @@
+test_dataset:
+  dataset:
+    name: paired-image-folders
+    args:
+      root_path_1: ./data/1_Image_SR/test/Set5/LR_bicubic/X3
+      root_path_2: ./data/1_Image_SR/test/Set5/HR
+  wrapper:
+    name: sr-implicit-paired
+    args: {}
+  batch_size: 1 
+eval_type: benchmark-2
+
+data_norm:
+  inp: {sub: [0], div: [1]}
+  gt: {sub: [0], div: [1]}
