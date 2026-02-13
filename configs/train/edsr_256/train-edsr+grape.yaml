@@ -2,7 +2,8 @@ train_dataset:
   dataset:
     name: image-folder
     args:
-      root_path: /home/jijang/ssd_data/projects/ContinuousSR/data/1_Image_SR/DIV2K/DIV2K_train_HR
+      root_path: /home/jijang/projects/GRAPE/data/DIV2K/DIV2K_train_HR
+      repeat: 20
       cache: in_memory
   wrapper:
     name: sr-implicit-downsampled 
@@ -10,13 +11,13 @@ train_dataset:
       inp_size: 256
       scale_max: 4
       scale_min: 4
-  batch_size: 64
+  batch_size: 16
 
 val_dataset:
   dataset:
     name: image-folder
     args:
-      root_path: /home/jijang/ssd_data/projects/ContinuousSR/data/1_Image_SR/DIV2K/DIV2K_valid_HR
+      root_path: /home/jijang/projects/GRAPE/data/DIV2K/DIV2K_valid_HR
       cache: in_memory
   wrapper:
     name: sr-implicit-downsampled
@@ -24,31 +25,31 @@ val_dataset:
       inp_size: 256
       scale_max: 4
       scale_min: 4
-  batch_size: 64
-
+  batch_size: 16
 
 data_norm:
   inp: {sub: [0], div: [1]}
   gt: {sub: [0], div: [1]}
 
 model:
-  name: continuous-gaussian 
+  name: grape_4hw
   args:
     encoder_spec:
-      name: swinir
-      args: 
-        no_upsampling: true  
-
+      name: edsr-baseline
+      args:
+        no_upsampling: false
+        scale: 4
+ 
 optimizer:
   name: adam
   args:
     lr: 1.e-4
-epoch_max: 2000
+epoch_max: 1000
  
 lr_schedule:
    name: CosineAnnealingLR 
    args:
-     T_max: 2000 
+     T_max: 1000 
      eta_min: 1.e-6
 
 epoch_val: 1

@@ -2,7 +2,7 @@ test_dataset:
   dataset:
     name: image-folder
     args:
-      root_path: ./data/test/Set14/HR
+      root_path: /home/jijang/ssd_data/projects/ContinuousSR/data/1_Image_SR/test/Set5/HR
       first_k:
       repeat: 1
       cache: in_memory
@@ -10,10 +10,10 @@ test_dataset:
     name: sr-implicit-downsampled
     args:
       inp_size:
-      scale_max: 6.4
-      scale_min: 6.4
+      scale_max: 3.5
+      scale_min: 3.5
   batch_size: 1
-eval_type: benchmark-6.4
+eval_type: benchmark-3.5
 
 data_norm:
   inp: {sub: [0], div: [1]}

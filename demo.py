@@ -32,8 +32,8 @@ def get_macs_and_params(model: torch.nn.Module, input_data: Tuple[torch.Tensor, 
 
 def main():
     parser = argparse.ArgumentParser(description="ContinuousSR inference with metrics")
-    parser.add_argument("--input", default="butterflyx4.png")
-    parser.add_argument("--model", default="save/edsr+gauss-emsemble-fast-no-reg/epoch-last.pth")
+    parser.add_argument("--input", default="resized_bicubic_w256.png")
+    parser.add_argument("--model", default="save/edsr+grape-4hw-256-t1000/epoch-last.pth")
     parser.add_argument("--scale", default="4 , 4", help="e.g. '4,4' for HxW scale factors")
     parser.add_argument("--output", default="result.png")
     parser.add_argument("--gpu", default="7")

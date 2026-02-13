@@ -222,7 +222,7 @@ def main(config_, save_path):
         if epoch_val and epoch % epoch_val == 0:
             with torch.no_grad():
                 model_eval = model.module if n_gpus > 1 else model
-                val_psnr, val_ssim, _ = eval_psnr(val_loader, model_eval, data_norm=config['data_norm'], eval_type=None, save_img=False)
+                val_psnr, val_ssim, _, _ = eval_psnr(val_loader, model_eval, data_norm=config['data_norm'], eval_type=None, save_img=False)
                 log(f'Validation Epoch {epoch}- PSNR: {val_psnr:.4f} SSIM: {val_ssim:.4f}') 
                 writer.add_scalar('psnr/val', val_psnr, epoch)
                 if config.get('use_wanb', False):
@@ -268,7 +268,7 @@ def main(config_, save_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', default='configs/train/debug/train-gsenc+debug1.yaml')
+    parser.add_argument('--config', default='configs/train/edsr_256/train-edsr+grape-4hw-256-t1000-k=16.yaml')
     parser.add_argument('--tag', default=None)
     parser.add_argument('--gpu', default='2')
     parser.add_argument('--resume', default=None)

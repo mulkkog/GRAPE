@@ -1,11 +1,12 @@
 """
-Enhanced super‑resolution evaluation script with robust timing options.
+Enhanced super-resolution evaluation script with robust timing options + LPIPS(VGG).
 Key features:
-• Accurate inference timing via either CUDA events or wall‑clock (`perf_counter`).
-• Per‑iter events freshly allocated to avoid reuse artefacts.
-• Warm‑up iterations separated from measurement.
-• Auto‑enable `torch.backends.cudnn.benchmark` when input shapes are fixed.
-• Optional automatic half‑precision (`--fp16`) for Ampere+ GPUs.
+• Accurate inference timing via either CUDA events or wall-clock (`perf_counter`).
+• Per-iter events freshly allocated to avoid reuse artefacts.
+• Warm-up iterations separated from measurement.
+• Auto-enable `torch.backends.cudnn.benchmark` when input shapes are fixed.
+• Optional automatic half-precision (`--fp16`) for Ampere+ GPUs.
+• LPIPS (VGG) perceptual metric via `--lpips`.
 • CSV logging support for easy spreadsheet analysis.
 
 Usage example:
@@ -13,7 +14,7 @@ Usage example:
         --config configs/test/test-set5-4.yaml \
         --model save/edsr+gauss-emsemble-fast-no-reg/epoch-last.pth \
         --gpu 3 \
-        --warmup 10 --repeat 50 --timing_mode wall --csv log.csv
+        --warmup 10 --repeat 50 --timing_mode wall --lpips --csv log.csv
 """
 
 import warnings
@@ -37,24 +38,23 @@ import utils
 from utils import make_coord, ssim
 from torchvision.utils import save_image
 
+# LPIPS(VGG)
+try:
+    import lpips
+    _LPIPS_AVAILABLE = True
+except Exception:
+    _LPIPS_AVAILABLE = False
+
+
 # -----------------------
 # Helper: measure forward
 # -----------------------
 
 def measure_forward_time(model, inp, scale, *, warmup=10, repeat=50, mode="event"):
-    """Return average forward() time in milliseconds.
-
-    Args:
-        model: nn.Module (already in eval / no‑grad context)
-        inp  : (1,C,H,W) cuda tensor, *already* normalised if needed
-        scale: (1,) or () cuda tensor / float
-        warmup: number of iterations to ignore for algorithm search / JIT etc.
-        repeat: number of iterations to measure
-        mode  : "event" | "wall"  – timing backend
-    """
+    """Return average forward() time in milliseconds."""
     stream = torch.cuda.current_stream()
 
-    # Warm‑up (kernel tuning, JIT, GPU clocks)
+    # Warm-up
     for _ in range(warmup):
         _ = model(inp, scale)
     torch.cuda.synchronize()
@@ -81,18 +81,18 @@ def measure_forward_time(model, inp, scale, *, warmup=10, repeat=50, mode="event
     else:
         raise ValueError(f"Unknown timing mode: {mode}")
 
+
 # -----------------------
 # Main eval routine
 # -----------------------
 
 def eval_psnr(loader, model, data_norm, eval_type, *, fp16=False, timing_cfg=None,
-             save_img=False, output_dir="debug"):
+             save_img=False, output_dir="debug", compute_lpips=False):
 
     model.eval()
     if fp16:
         model.half()
 
-    # Enable fast cuDNN algorithm selection for fixed shapes
     torch.backends.cudnn.benchmark = True
 
     # -------- normalisation --------
@@ -122,7 +122,19 @@ def eval_psnr(loader, model, data_norm, eval_type, *, fp16=False, timing_cfg=Non
     if save_img:
         os.makedirs(output_dir, exist_ok=True)
 
-    # If timing requested, we'll measure on the *first sample* after warm‑up
+    # LPIPS init
+    lpips_fn = None
+    lpips_avg = utils.Averager()
+    if compute_lpips:
+        if not _LPIPS_AVAILABLE:
+            raise ImportError("lpips package not found. Install with: pip install lpips")
+        lpips_fn = lpips.LPIPS(net='vgg').cuda().eval()
+
+        def _to_lpips(t):
+            if t.size(1) == 1:
+                t = t.repeat(1, 3, 1, 1)
+            return t.mul(2).sub(1).float()
+
     timing_ms = None
     timing_cfg = timing_cfg or {}
 
@@ -143,7 +155,6 @@ def eval_psnr(loader, model, data_norm, eval_type, *, fp16=False, timing_cfg=Non
         if isinstance(pred, tuple):
             pred = pred[0]
 
-        # Timing once on the first sample if requested
         if timing_ms is None and timing_cfg.get("enable", False):
             timing_ms = measure_forward_time(
                 model, inp_norm if not fp16 else inp_norm.half(), scale,
@@ -155,17 +166,22 @@ def eval_psnr(loader, model, data_norm, eval_type, *, fp16=False, timing_cfg=Non
         pred = pred * gt_div + gt_sub
         pred.clamp_(0, 1)
 
-        # Metrics
         psnr_avg.add(metric_fn(pred, gt).item())
         ssim_avg.add(ssim(pred, gt).item())
 
-        # Save images if requested
+        if lpips_fn is not None:
+            with torch.no_grad():
+                lp = lpips_fn(_to_lpips(pred), _to_lpips(gt)).mean().item()
+            lpips_avg.add(lp)
+
         if save_img:
             save_image(pred, os.path.join(output_dir, f"pred_{idx_img}.png"))
             save_image(gt,   os.path.join(output_dir, f"gt_{idx_img}.png"))
         idx_img += 1
 
-    return psnr_avg.item(), ssim_avg.item(), timing_ms
+    lpips_val = lpips_avg.item() if lpips_fn is not None else None
+    return psnr_avg.item(), ssim_avg.item(), timing_ms, lpips_val
+
 
 # -----------------------
 # Entry point
@@ -173,13 +189,16 @@ def eval_psnr(loader, model, data_norm, eval_type, *, fp16=False, timing_cfg=Non
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", default="configs/test/test-urban100-4.yaml")
-    parser.add_argument("--model",  default='save/edsr+gauss-emsemble-fast-no-reg/epoch-last.pth')
-    parser.add_argument("--gpu",    default="3")
+    parser.add_argument("--config", default="configs/test/test-set5-4.yaml")
+    parser.add_argument("--model",  default="save/edsr+grape-4hw-256-t1000-k=1/epoch-last.pth")
+    parser.add_argument("--gpu",    default="0")
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--repeat", type=int, default=50)
     parser.add_argument("--timing_mode", choices=["event", "wall"], default="event")
     parser.add_argument("--fp16", action="store_true", help="enable half precision inference")
+    parser.add_argument("--lpips", action="store_false", help="measure LPIPS (VGG)")
+    parser.add_argument("--save_img", action="store_true", help="save predicted and GT images")
+    parser.add_argument("--out_dir", default="debug", help="directory to save images if --save_img set")
     parser.add_argument("--csv",  default=None, help="optional CSV log file")
     args = parser.parse_args()
 
@@ -188,33 +207,44 @@ if __name__ == "__main__":
     with open(args.config, "r") as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
 
-    # Dataset
     ds_spec = cfg["test_dataset"]
     dataset = datasets.make(ds_spec["dataset"])
     dataset = datasets.make(ds_spec["wrapper"], args={"dataset": dataset})
     loader = DataLoader(dataset, batch_size=ds_spec["batch_size"], num_workers=1, pin_memory=True)
 
-    # Model
     mdl_spec = torch.load(args.model)["model"]
     model = models.make(mdl_spec, load_sd=True).cuda()
 
-    # Evaluate
-    psnr, ssim_val, t_ms = eval_psnr(
+    psnr, ssim_val, t_ms, lpips_val = eval_psnr(
         loader, model,
         data_norm=cfg.get("data_norm", {}),
         eval_type=cfg.get("eval_type"),
         fp16=args.fp16,
         timing_cfg={"enable": True, "warmup": args.warmup, "repeat": args.repeat, "mode": args.timing_mode},
+        save_img=args.save_img, output_dir=args.out_dir,
+        compute_lpips=args.lpips,
     )
 
     print(f"\nPSNR  : {psnr:.4f}")
     print(f"SSIM  : {ssim_val:.4f}")
+    if args.lpips and lpips_val is not None:
+        print(f"LPIPS : {lpips_val:.4f}")
     if t_ms is not None:
-        print(f"\n[Timing] Average model.forward(): {t_ms:.3f} ms  |  FPS: {1000.0 / t_ms:.2f}")
+        print(f"\n[Timing] Average model.forward(): {t_ms:.4f} ms  |  FPS: {1000.0 / t_ms:.4f}")
+
     if args.csv and t_ms is not None:
         header = not os.path.isfile(args.csv)
         with open(args.csv, "a", newline="") as f:
             writer = csv.writer(f)
             if header:
-                writer.writerow(["model", "config", "fp16", "ms", "fps", "psnr", "ssim"])
-            writer.writerow([os.path.basename(args.model), os.path.basename(args.config), args.fp16, f"{t_ms:.3f}", f"{1000.0 / t_ms:.2f}", f"{psnr:.4f}", f"{ssim_val:.4f}"])
+                writer.writerow(["model", "config", "fp16", "ms", "fps", "psnr", "ssim", "lpips"])
+            writer.writerow([
+                os.path.basename(args.model),
+                os.path.basename(args.config),
+                args.fp16,
+                f"{t_ms:.4f}",
+                f"{1000.0 / t_ms:.4f}",
+                f"{psnr:.4f}",
+                f"{ssim_val:.4f}",
+                f"{lpips_val:.4f}" if (args.lpips and lpips_val is not None) else ""
+            ])

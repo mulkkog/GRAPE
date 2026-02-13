@@ -1,102 +1,120 @@
-# GRAPE – Gaussian Rendering for Accelerated Pixel Enhancement
+# GRAPE 🍇  
+[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
 
-A fast and lightweight **2‑D Gaussian splatting** renderer for arbitrary super‑resolution.
 
-- **68.6 FPS** on Urban‑100 ×4 *(NVIDIA RTX 3090)*
-- **1.56 M parameters**  
+## Gaussian Rendering for Accelerated Pixel Enhancement  
+### ⚡ Fast & Lightweight Arbitrary-Scale Super-Resolution  
+**Accepted to WACV 2026**
+
+> **69.33 FPS @ Urban100 ×4**  
+> **1.56M parameters**  
+> **1.10 GB peak GPU memory**
+
+---
+
+## 🧠 Overview
+
+**GRAPE** is a fast and lightweight framework for **arbitrary-scale super-resolution (ASSR)** based on **2D Gaussian splatting**.
+
+Unlike:
+- CNN-based fixed-scale SR models (scale-specific networks),
+- INR-based methods (per-coordinate MLP queries),
+- or heavy Gaussian decoders,
+
+GRAPE predicts **anisotropic 2D Gaussian parameters** and renders the high-resolution image in a **single differentiable rasterization**.
+
+---
+
+## 📊 Performance
+
+### Urban100 (×4)
+
+| Method      | Params | GPU Memory | FPS ↑ | PSNR (dB) |
+|------------|--------|-----------:|------:|----------:|
+| LIIF       | 1.58M  | 8.26 GB    |  3.06 |     26.15 |
+| GaussianSR | 1.84M  | 16.15 GB   |  6.19 |     26.19 |
+| GSASR      | 20.45M | 7.89 GB    |  0.22 |     27.00 |
+| **GRAPE**  | **1.56M** | **1.10 GB** | **69.33** | **25.87** |
+
+- **22.6×** faster than LIIF  
+- **11.2×** faster than GaussianSR  
+- **315×** faster than GSASR  
  
 ---
 
-## Table of Contents
+## 📦 Installation
 
-1. [Features](#features) 
-2. [Installation](#installation)
-   - [1 ‑ Create the ](#1-create-the-grape-conda-env)[`grape`](#1-create-the-grape-conda-env)[ conda env](#1-create-the-grape-conda-env)
-   - [2 ‑ Install Python dependencies](#2-install-python-dependencies)
-   - [3 ‑ Build ](#3-build-gsplat-from-source)[`gsplat`](#3-build-gsplat-from-source)[ from source](#3-build-gsplat-from-source)
-3. [Training & Evaluation](#training--evaluation) 
-4. [Citation](#citation)
-5. [License](#license)
-
----
-
-## Features
-
-|                    | GRAPE            | LIIF          | 
-| ------------------ | -----------------| ------------- |
-| Params             | **1.56 M**       | 1.52 M        |
-| Urban100 ×4        | **68.6 FPS**     | 3.06 FPS      |
-| PSNR (Urban100 ×4) | **25.72 dB**     | 26.15 dB      |
-
-*Gaussian decoding* replaces heavy decoder with a single raster pass.
- 
----
-
-## Installation
-
-### 1 ‑ Create the `grape` conda env
+### 1) Create Conda Environment
 
 ```bash
 conda create -n grape python=3.9 -y
 conda activate grape
 ```
 
-### 2 ‑ Install Python dependencies
+### 2) Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-`requirements.txt` is generated via `pip freeze` and pinned to tested versions.
+### 3) Build `gsplat` (CUDA Extension)
 
-### 3 ‑ Build `gsplat` from source
+`gsplat` is a lightweight CUDA rasterizer.
 
-`gsplat` is a tiny CUDA extension used by the renderer.  **PEP 517 build‑isolation breaks if PyTorch is only inside your conda env**, so we:
+Because PEP 517 build isolation conflicts with Conda-installed PyTorch:
 
-1. Drop a minimal \`\` next to `setup.py`:
-   ```toml
-   [build-system]
-   requires = [ "setuptools>=68", "wheel", "torch" ]
-   build-backend = "setuptools.build_meta"
-   ```
-2. Install in *editable* mode with build‑isolation disabled:
-   ```bash
-   # inside GRAPE/gsplat
-   pip install -e . --no-build-isolation -v
-   ```
-   `-v` prints every compiler command; expect \~5‑10 min on first build.
+1. Add a minimal `pyproject.toml` next to `setup.py`:
+
+```toml
+[build-system]
+requires = ["setuptools>=68", "wheel", "torch"]
+build-backend = "setuptools.build_meta"
+```
+
+2. Install in editable mode with build isolation disabled:
+
+```bash
+cd gsplat
+pip install -e . --no-build-isolation --config-settings editable_mode=compat -v
+```
+
+First build may take 5–10 minutes.
 
 ---
 
-## Training & Evaluation
+## 🎯 Training
 
-All configs live under `configs/`.  The default trains ×4 super‑resolution on DIV2K:
-
-```bash
-python train.py --config configs/train/debug/train-gsenc+debug1.yaml
-```
-
-Evaluation only:
+Default configuration: DIV2K ×4
 
 ```bash
-python test.py --config configs/test/test-urban100-4.yaml --model save/edsr+gauss-emsemble-fast-no-reg/epoch-last.pth 
+python train.py --config configs/train/edsr_256/train-edsr+grape.yaml
 ```
- 
 
-## Citation
+---
 
-```text
-@inproceedings{grape2025,
+## 🔎 Evaluation
+
+Urban100 ×4 example:
+
+```bash
+python test.py \
+  --config configs/test/test-urban100-4.yaml \
+  --model save/edsr+gauss-emsemble-fast-no-reg/epoch-last.pth
+```
+
+--- 
+
+
+## 📖 Citation
+
+```bibtex
+@inproceedings{grape2026,
   title     = {GRAPE: Gaussian Rendering for Accelerated Pixel Enhancement},
-  author    = { },
-  booktitle = { },
-  year      = {2025}
+  author    = {Jung In Jang and Kyong Hwan Jin},
+  booktitle = {Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)},
+  year      = {2026}
 }
 ```
 
 ---
-
-## License
-
-GRAPE is released under the **MIT License**.  See `LICENSE` for details.
  
