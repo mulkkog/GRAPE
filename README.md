@@ -94,6 +94,8 @@ python train.py --config configs/train/edsr_256/train-edsr+grape.yaml
 
 ## 🔎 Evaluation
 
+- [Google Drive Folder](https://drive.google.com/drive/folders/12YN1LZrBKPxDFj2UKomNScHo3qT6A-Kk?usp=drive_link) 
+
 Urban100 ×4 example:
 
 ```bash
