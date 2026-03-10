@@ -1,6 +1,6 @@
 # GRAPE 🍇  
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
-
+[![Paper](https://img.shields.io/badge/Paper-OpenAccess-blue.svg)](https://openaccess.thecvf.com/content/WACV2026/papers/Jang_GRAPE_Gaussian_Rendering_for_Accelerated_Pixel_Enhancement_Brings_Fast_and_WACV_2026_paper.pdf)
+[![Supplementary](https://img.shields.io/badge/Supplementary-PDF-green.svg)](https://openaccess.thecvf.com/content/WACV2026/supplemental/Jang_GRAPE_Gaussian_Rendering_WACV_2026_supplemental.pdf)
 
 ## Gaussian Rendering for Accelerated Pixel Enhancement  
 ### ⚡ Fast & Lightweight Arbitrary-Scale Super-Resolution  
